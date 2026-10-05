@@ -1,66 +1,54 @@
-# 🌋 Vulkan Starter App
+# Лабораторная работа №1 — Основы 3D-графики
 
-## Getting started
+## Условие
 
-You need C++ compiler, Vulkan SDK and CMake installed before you can build this project.
+**Вариант 3 — параллелепипед.**
 
-This project uses C++20 standard and thus requires either of those compilers:
-- GCC 10.X
-- Clang 10
-- Microsoft Visual Studio 2019
+Нужно построить 3D-объект и спроецировать его на экран, поработать с матрицами перспективной и ортографической проекции и с аффинными преобразованиями. Программа должна работать в реальном времени, с возможностью менять проекцию и преобразования объекта. Используются Vulkan, GLFW и ImGui.
 
-This is officially tested on *Windows* and *GNU/Linux platforms*, no *macOS* support yet.
-If you have a working macOS solution of this code, consider submitting a PR so others
-can build this example code without a hassle!
+Выполнены все дополнительные задания:
 
-<ins>**1. Downloading the repository**</ins>
+1. Переключение проекции (ортографическая / перспективная) в интерфейсе.
+2. Изменение позиции, поворота и растяжения фигуры.
+3. Движение и вращение по сложной траектории с паузой, скоростью и параметрами траектории.
+4. Выбор цвета фигуры (`ColorEdit`).
+5. Процедурные цвета вершин, которые умножаются на выбранный цвет.
+6. Несколько объектов, у каждого свой `VkDescriptorSet`: сцена «Маятниковая волна» (переключатель вверху панели).
 
-Start by cloning the repository with `git clone --depth 1 https://github.com/vladeemerr/vulkan-starter-app`
+## Что нужно установить
 
-This repository does not contain any submodules, it utilizes CMake's `FetchContent` feature instead.
+- C++20-компилятор (clang, gcc или MSVC)
+- CMake 3.20+ и Ninja
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) версии **1.4.321 или новее**
 
-<ins>**2. Configuring the project**</ins>
-
-Run either one of the CMake lines to download dependencies and configure the project:
-
+На macOS:
 ```bash
-cmake --preset debug       # for GNU/Linux (GCC/Clang)
-cmake --preset msvc-debug  # for Windows (Visual Studio 2019)
-cmake --preset mingw-debug # for Windows (MinGW)
+xcode-select --install
+brew install cmake ninja
+# Vulkan SDK ставится установщиком с сайта LunarG (с галочкой "System Global Installation"),
+# затем в ~/.zshrc добавить:
+source ~/VulkanSDK/<версия>/setup-env.sh
 ```
 
-If you wish to build in `release` mode, change `debug` to `release`.
+GLFW, ImGui, vk-bootstrap и VMA скачиваются автоматически при первой сборке, нужен интернет.
 
-If changes are made (added/removed files), or if you want to regenerate project files, rerun the command above.
-
-<ins>**3. Building**</ins>
-
-To build the project, use the line below. You are most likely using `debug` preset, so
-the directory that will eventually contain your build files is named `build-debug`.
-
-Likewise for `release` that directory will be named `build-release`
-
-Run one those commands, depending on which preset you chose:
+## Сборка и запуск
 
 ```bash
-cmake --build build-debug --parallel # for debug
-cmake --build build-release --parallel # for release
+git clone https://github.com/BlackWLN/computer_graphics_labs.git
+cd computer_graphics_labs
+git switch lab1
+
+cmake --preset debug
+cmake --build build-debug --parallel
+./build-debug/vulkan-starter-app
 ```
 
-### Running
+На Windows с Visual Studio: `cmake --preset msvc-debug`, затем `cmake --build build-debug`. Исполняемый файл будет в `build-debug/Debug/`.
 
-`build-*` directory will contain the executable in one of the subdirectories after successful build.
+## Управление
 
-For `msvc-{debug|release}` builds output subdirectory is set to `Debug` or `Release` respectively.
-For other configurations output subdirectory is set to `vulkan-starter-app`.
+- Левая кнопка мыши по сцене вращает камеру, колесо приближает.
+- Все параметры настраиваются в панели «Параметры».
 
-**Make sure your working directory is set to the project root!**
-Project root is where this README file resides. Otherwise, the
-code responsible for loading shaders or other resources from files will fail,
-because relative paths are used.
-
-### Compiling shaders
-
-`CMakeLists.txt` has a build recipe for compiling shader files
-along with an application. Look for a comment in this file to see
-how to compile your shaders.
+Проект основан на [стартовом коде преподавателя](https://github.com/vladeemerr/vulkan-starter-app).

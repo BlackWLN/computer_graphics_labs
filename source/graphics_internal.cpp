@@ -77,21 +77,27 @@ VkFormat selectDepthFormat(VkPhysicalDevice physical_device) {
 }
 
 bool initializeImGUI() {
+	// [наша правка] imgui 1.92 берет из этого пула 2 набора под сэмплеры (linear и nearest)
+	// и по набору на каждую текстуру (атлас шрифта может пересоздаваться).
+	// в стартовом коде maxSets было равно числу картинок в swapchain, на маке их 2-3,
+	// наборов не хватало и imgui падал с ассертом про ImTextureData. поэтому берем с запасом
+	constexpr uint32_t imgui_max_sets = 16;
+
 	const VkDescriptorPoolSize descriptor_pool_sizes[] = {
 		{
 			.type = VK_DESCRIPTOR_TYPE_SAMPLER,
-			.descriptorCount = IMGUI_IMPL_VULKAN_MINIMUM_SAMPLER_POOL_SIZE,
+			.descriptorCount = imgui_max_sets,
 		},
 		{
 			.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-			.descriptorCount = IMGUI_IMPL_VULKAN_MINIMUM_SAMPLED_IMAGE_POOL_SIZE,
+			.descriptorCount = imgui_max_sets,
 		},
 	};
 
 	const VkDescriptorPoolCreateInfo descriptor_pool = {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		.maxSets = uint32_t(vk_swapchain_images.size()),
+		.maxSets = imgui_max_sets,
 		.poolSizeCount = sizeof(descriptor_pool_sizes) / sizeof(descriptor_pool_sizes[0]),
 		.pPoolSizes = descriptor_pool_sizes,
 	};
@@ -249,8 +255,11 @@ bool rebuildSwapchain(uint32_t width, uint32_t height) {
 	vkb::SwapchainBuilder sb(context.physical_device, context.device, vk_surface,
 	                         context.graphics_queue_index, context.graphics_queue_index);
 
+	// [наша правка] тот же формат, что и при создании (см. initialize)
 	auto sb_result = sb.set_desired_extent(width, height)
-	                   .use_default_format_selection()
+	                   .set_desired_format({VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+					   .add_fallback_format({VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+					   .add_fallback_format({VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
 					   .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 					   .use_default_image_usage_flags()
 					   .set_old_swapchain(vk_swapchain)
@@ -391,6 +400,7 @@ bool initialize(GLFWwindow* const window) {
 
 	auto ibr = ib.require_api_version(VK_MAKE_VERSION(1, 1, 0))
 				 .request_validation_layers()
+				 .use_default_debug_messenger() // [наша правка] ошибки слоев валидации печатаются в консоль
 				 .build();
 
 	auto vkb_instance = ibr.value();
@@ -463,7 +473,11 @@ bool initialize(GLFWwindow* const window) {
 
 	vkb::SwapchainBuilder sb(vkb_device);
 
-	auto sb_result = sb.use_default_format_selection()
+	// [наша правка] формат UNORM вместо SRGB: с SRGB и imgui, и цвет из ColorEdit
+	// выглядели выбеленными (видеокарта еще раз переводила цвета в sRGB)
+	auto sb_result = sb.set_desired_format({VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+					   .add_fallback_format({VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+					   .add_fallback_format({VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
 					   .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 					   .use_default_image_usage_flags()
 					   .build();
@@ -786,7 +800,7 @@ void submitAndPresent() {
 	    result == VK_SUBOPTIMAL_KHR ||
 	    vk_swapchain_resize_require) {
 		rebuildSwapchain(vk_swapchain_resize_width, vk_swapchain_resize_height);
-	} else {
+	} else if (result != VK_SUCCESS) { // [наша правка] раньше это печаталось на каждом нормальном кадре
 		std::cerr << "Failed to present Vulkan swapchain image\n";
 	}
 }

@@ -17,7 +17,7 @@ namespace {
 constexpr int32_t default_window_width = 1280;
 constexpr int32_t default_window_height = 720;
 
-constexpr char default_window_title[] = "Vulkan Starter App";
+constexpr char default_window_title[] = "КГ ЛР1 — Параллелепипед (вариант 3)";
 
 GLFWwindow* glfw_window;
 
@@ -99,5 +99,5 @@ err_imgui_init:
 err_null_window:
 	glfwTerminate();
 
-	return 0;
+	return status;
 }
